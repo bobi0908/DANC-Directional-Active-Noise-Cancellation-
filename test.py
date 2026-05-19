@@ -42,7 +42,7 @@ def analyze_noise(audio_frame, direction):
     return audio_frame
 
 
-def estimate_direction(audio_frame):
+def estimate_direction(audio_frame): #for DANC
     """
     Direction-of-arrival estimation.
     
@@ -52,6 +52,11 @@ def estimate_direction(audio_frame):
     return 0
 
 
+def analyze_noise(audio_frame, direction):
+    """
+    FFT / spectral analysis stage.
+    """
+    return audio_frame
 
 
 def generate_anti_noise(audio_frame, noise_profile):
@@ -67,11 +72,10 @@ def process_audio(audio_frame): # Main processing pipeline
     cleaned = preprocess(audio_frame)
 
     # Step 2
-     noise_profile = analyze_noise(cleaned, direction)
-
+    direction = estimate_direction(cleaned)
 
     # Step 3
-     direction = estimate_direction(cleaned)
+    noise_profile = analyze_noise(cleaned, direction)
 
     # Step 4
     anti_noise = generate_anti_noise(cleaned, noise_profile)
