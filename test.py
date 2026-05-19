@@ -28,21 +28,15 @@ start_time = time.time()
 
 def preprocess(audio_frame):
     """
-    Basic preprocessing:
+    Basic preprocessing: #MEI#
     - normalization
     - filtering
     - windowing
     """
     return audio_frame
 
-def analyze_noise(audio_frame, direction):
-    """
-    FFT / spectral analysis stage.
-    """
-    return audio_frame
 
-
-def estimate_direction(audio_frame): #for DANC
+def estimate_direction(audio_frame):
     """
     Direction-of-arrival estimation.
     
@@ -54,7 +48,7 @@ def estimate_direction(audio_frame): #for DANC
 
 def analyze_noise(audio_frame, direction):
     """
-    FFT / spectral analysis stage.
+    FFT / spectral analysis stage. #MEI#
     """
     return audio_frame
 
