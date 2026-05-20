@@ -9,29 +9,13 @@ import numpy as np
 import sounddevice as sd
 
 # Audio settings
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 48000
 DURATION = 1.0  # seconds
-
+#print(sd.query_devices(1))
 # Musical note names
-NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F',
-              'F#', 'G', 'G#', 'A', 'A#', 'B']
 
+sd.default.device=(1,0)
 
-def frequency_to_note(freq):
-    """
-    Convert frequency to nearest musical note.
-    A4 = 440 Hz
-    """
-    if freq <= 0:
-        return None
-
-    # MIDI note number
-    midi = int(round(69 + 12 * np.log2(freq / 440.0)))
-
-    note_name = NOTE_NAMES[midi % 12]
-    octave = (midi // 12) - 1
-
-    return f"{note_name}{octave}"
 
 
 def detect_frequency(audio, sample_rate):
@@ -84,10 +68,12 @@ try:
         # Detect frequency
         freq = detect_frequency(audio, SAMPLE_RATE)
 
-        # Convert to note
-        note = frequency_to_note(freq)
+        
 
-        print(f"Frequency: {freq:.2f} Hz  ->  Note: {note}")
+        print(f"Frequency: {freq:.2f} Hz  ")
 
 except KeyboardInterrupt:
     print("Stopped.")
+#print(sd.default.device)
+#print(sd.query_devices())
+

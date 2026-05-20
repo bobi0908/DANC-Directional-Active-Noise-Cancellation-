@@ -1,0 +1,102 @@
+# =========================================================
+# ANC FILTER STATE
+# =========================================================
+
+import numpy as np
+
+FILTER_LENGTH = 128 
+LEARNING_RATE = 0.0001 # Small learning rate for stability, big for fast adaptation but risk of divergence
+
+# =========================================================
+# ADAPTIVE FILTER STATE
+# =========================================================
+
+# FIR adaptive filter coefficients
+filter_weights = np.zeros(FILTER_LENGTH,dtype=np.float32) #how much each previous sample contributes to generating the current output sample
+
+# Reference signal history buffer
+noise_history = np.zeros(FILTER_LENGTH,dtype=np.float32) #array of past noise samples
+
+# =========================================================
+# ADAPTIVE ANC FUNCTION
+# =========================================================
+
+buffer_idx = 0 # Index for circular buffer
+
+def adaptive_anc(noise_input):
+    global filter_weights
+    global noise_history
+    global buffer_idx
+    # Output buffer
+    anti_noise = np.zeros_like(noise_input)
+
+    # -----------------------------------------------------
+    # PROCESS EACH SAMPLE
+    # -----------------------------------------------------
+    for n in range(len(noise_input)):
+
+       
+        noise_history[buffer_idx] = noise_input[n] # Update history buffer with current noise sample
+
+        # GENERATE ANTI-NOISE
+        # FIR filter output 
+        y = 0
+
+        for k in range(FILTER_LENGTH):
+
+            idx = (buffer_idx - k) % FILTER_LENGTH
+            y += (filter_weights[k]* noise_history[idx])
+
+        # save anti-noise output
+        anti_noise[n] = y
+
+        # residual error
+        error = noise_input[n] + y
+
+        # LMS adaptive update
+        for k in range(FILTER_LENGTH):
+
+            idx = (buffer_idx - k) % FILTER_LENGTH
+            filter_weights[k] -= (LEARNING_RATE* error* noise_history[idx])
+
+        # advance circular pointer
+        buffer_idx = (buffer_idx + 1) % FILTER_LENGTH
+
+    # clipping protection
+    anti_noise = np.clip(anti_noise,-1.0,1.0)
+
+    return anti_noise
+
+
+# =========================================================
+# PROCESS AUDIO FRAME
+# =========================================================
+def process_audio(audio_frame):
+    noise_input = audio_frame  # 1D array
+
+    anti_noise = adaptive_anc(noise_input)
+
+    stereo_output = np.column_stack([anti_noise, anti_noise]) #Both output same antinoise
+
+    return stereo_output 
+
+###might be used for DANC
+# region
+#def process_audio(audio_frame): 
+    """
+    audio_frame.shape=(BLOCK_SIZE, CHANNELS)
+    """
+    # USE FIRST MIC AS REFERENCE MIC
+
+    noise_input = audio_frame[:, 0]
+
+    # GENERATE ANTI-NOISE
+  
+    anti_noise = adaptive_anc( noise_input)
+
+    # CONVERT TO STEREO OUTPUT
+
+    stereo_output = np.column_stack([ anti_noise, anti_noise])
+
+    return stereo_output
+# endregion
