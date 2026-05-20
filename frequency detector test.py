@@ -10,13 +10,8 @@ import sounddevice as sd
 
 # Audio settings
 SAMPLE_RATE = 48000
-DURATION = 1.0  # seconds
-#print(sd.query_devices(1))
-# Musical note names
-
-sd.default.device=(1,0)
-
-
+DURATION = 1  # seconds
+print(sd.query_devices())
 
 def detect_frequency(audio, sample_rate):
     """
@@ -33,7 +28,7 @@ def detect_frequency(audio, sample_rate):
     magnitude = np.abs(fft)
 
     # Ignore very low frequencies
-    min_freq = 50
+    min_freq = 80
     max_freq = 10000
 
     valid = np.where((frequencies >= min_freq) &
@@ -74,6 +69,6 @@ try:
 
 except KeyboardInterrupt:
     print("Stopped.")
-#print(sd.default.device)
-#print(sd.query_devices())
+print(sd.default.device)
+print(sd.query_devices())
 

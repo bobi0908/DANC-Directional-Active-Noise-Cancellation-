@@ -1,139 +1,85 @@
-#framework from gpt
-import sounddevice as sd
 import numpy as np
-import time
+import sounddevice as sd
+from scipy.signal import correlate, correlation_lags
 
-# =========================================================
-# CONFIG
-# =========================================================
+SAMPLE_RATE = 48000
+DURATION = 5.0
+BLOCKSIZE = int(SAMPLE_RATE * DURATION)
 
-SAMPLE_RATE = 44100
-BLOCK_SIZE = 256
-
-INPUT_CHANNELS = 1      # microphone array
-OUTPUT_CHANNELS = 1     # stereo headphones/speakers
-
-DTYPE = np.float32
-
-# =========================================================
-# DEBUG / PERFORMANCE
-# =========================================================
-
-callback_count = 0
-start_time = time.time()
-
-# =========================================================
-# PROCESSING MODULES (TEAMMATES REPLACE THESE)
-# =========================================================
-
-def preprocess(audio_frame):
-    """
-    Basic preprocessing: #MEI#
-    - normalization
-    - filtering
-    - windowing
-    """
-    return audio_frame
+DEVICE_1 = 4   # phone mic
+DEVICE_2 = 1   # USB mic
 
 
-def estimate_direction(audio_frame):
-    """
-    Direction-of-arrival estimation.
-    
-    Teammate inserts beamforming /
-    cross-correlation code here.
-    """
-    return 0
+def normalise(x):
+    x = np.asarray(x, dtype=np.float32).ravel()
+    x = x - np.mean(x)
+
+    std = np.std(x)
+    if std > 0:
+        x = x / std
+
+    return x
 
 
-def analyze_noise(audio_frame, direction):
-    """
-    FFT / spectral analysis stage. #MEI#
-    """
-    return audio_frame
+def record_from_device(device_id, duration, sample_rate):
+    stream = sd.InputStream(
+        device=device_id,
+        channels=1,
+        samplerate=sample_rate,
+        dtype="float32"
+    )
+
+    with stream:
+        audio, _ = stream.read(int(duration * sample_rate))
+
+    return audio.ravel()
 
 
-def generate_anti_noise(audio_frame, noise_profile):
-    """
-    ANC adaptive filter stage, machine learning, etc.
-    """
-    return 
+print("Starting streams...")
 
-
-def process_audio(audio_frame): # Main processing pipeline
-
-    # Step 1
-    cleaned = preprocess(audio_frame)
-
-    # Step 2
-    direction = estimate_direction(cleaned)
-
-    # Step 3
-    noise_profile = analyze_noise(cleaned, direction)
-
-    # Step 4
-    anti_noise = generate_anti_noise(cleaned, noise_profile)
-    
-    
-    return anti_noise
-
-# =========================================================
-# REAL-TIME AUDIO CALLBACK
-# =========================================================
-
-def audio_callback(indata, outdata, frames, time_info, status):
-
-    global callback_count
-
-    # -----------------------------------------------------
-    # STATUS / ERROR REPORTING
-    # -----------------------------------------------------
-
-    if status:
-        print(status)
-
-    # -----------------------------------------------------
-    # SAFETY CHECKS
-    # -----------------------------------------------------
-
-    if indata.shape[0] != BLOCK_SIZE:
-        print("Unexpected block size")
-
-    # -----------------------------------------------------
-    # PROCESS AUDIO
-    # -----------------------------------------------------
-
-    processed = process_audio(indata)
-
-    # -----------------------------------------------------
-    # OUTPUT TO SPEAKERS
-    # -----------------------------------------------------
-
-    outdata[:] = processed[:, :OUTPUT_CHANNELS]
-
-    # -----------------------------------------------------
-    # PERFORMANCE MONITORING
-    # -----------------------------------------------------
-
-    callback_count += 1
-
-# =========================================================
-# STREAM SETUP
-# =========================================================
-
-stream = sd.Stream(
+mic1 = sd.InputStream(
+    device=DEVICE_1,
+    channels=1,
     samplerate=SAMPLE_RATE,
-    blocksize=BLOCK_SIZE,
-    channels=(INPUT_CHANNELS, OUTPUT_CHANNELS),
-    dtype=DTYPE,
-    callback=audio_callback
+    dtype="float32"
 )
 
-# =========================================================
-# START STREAM
-# =========================================================
+mic2 = sd.InputStream(
+    device=DEVICE_2,
+    channels=1,
+    samplerate=SAMPLE_RATE,
+    dtype="float32"
+)
 
-print("Starting ANC stream...")
+mic1.start()
+mic2.start()
 
-with stream:
-    input("Press Enter to stop...\n")
+print("Recording... make a loud clap or play a steady tone now.")
+
+audio1, _ = mic1.read(BLOCKSIZE)
+audio2, _ = mic2.read(BLOCKSIZE)
+
+mic1.stop()
+mic2.stop()
+mic1.close()
+mic2.close()
+
+x = normalise(audio1)
+y = normalise(audio2)
+
+# Cross-correlate full recordings
+corr = correlate(y, x, mode="full")
+lags = correlation_lags(len(y), len(x), mode="full")
+
+best_index = np.argmax(np.abs(corr))
+best_lag = lags[best_index]
+
+# Normalised approximate correlation
+best_corr = corr[best_index] / len(x)
+
+
+
+print(f"Best lag: {best_lag} samples")
+print(f"Best lag in seconds: {best_lag / SAMPLE_RATE:.4f} s")
+print(f"Best absolute correlation: {abs(best_corr):.4f}")
+print(f"Signed correlation: {best_corr:.4f}")
