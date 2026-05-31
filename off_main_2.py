@@ -10,8 +10,8 @@ from offline_cancellation import OfflineNLMSFilter as off
 
 SAMPLE_RATE = 48000
 DURATION = 20
-DEVICE_ID = 7       # your aggregate device ID
-FIXED_LAG = 1780     # use your calibrated lag, around 1768-1775
+DEVICE_ID = 0       # your aggregate device ID
+FIXED_LAG = 0     # use your calibrated lag, around 1768-1775
 
 LOWCUT = 80
 HIGHCUT = 1000
