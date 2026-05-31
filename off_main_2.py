@@ -15,7 +15,8 @@ FIXED_LAG = 0    # use your calibrated lag, around 1768-1775
 
 LOWCUT = 80
 HIGHCUT = 1000
-
+channels=2
+device=DEVICE_ID
 FILTER_LENGTH = 128
 LEARNING_RATE = 0.0001
 
