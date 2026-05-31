@@ -128,7 +128,8 @@ finally:
     mic1.close()
     mic2.close()
     print("Closed successfully")
-best_lag = -174137 #change this every time you change the configuration ofgit a the mics
+
+best_lag = 1770 #change this every time you change the configuration of the mics
 
 def align_signals(reference_signal, target_signal, lag):
     reference_signal = np.asarray(reference_signal).ravel()
