@@ -14,11 +14,9 @@ strongly preferred because the two channels are then sampled synchronously.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from collections import deque
 import queue
 import time
-import csv
 
 import numpy as np
 import sounddevice as sd
@@ -40,7 +38,7 @@ MIC_SPACING_M = 0.225
 
 # Measured delay when the source is exactly centred at 0 degrees.
 # Start with 0.0, then replace it after testing.
-CALIBRATION_DELAY_OFFSET = -0.0
+CALIBRATION_DELAY_OFFSET = 0.5
 
 
 SPEED_OF_SOUND = 343.0
@@ -50,12 +48,9 @@ PRINT_EVERY_SECONDS = 0.25
 # A real physical delay cannot be larger than mic_spacing / speed_of_sound.
 # We add a small safety margin.
 MAX_DELAY_MARGIN_SAMPLES = 0
-MIN_RMS_FOR_DIRECTION = 0.0003
-MIN_CONFIDENCE_FOR_DIRECTION = 2.5
+MIN_RMS_FOR_DIRECTION = 0.003
+MIN_CONFIDENCE_FOR_DIRECTION = 5.0
 
-TRUE_ANGLE_DEG = -15
-TRIAL_NAME = "test_-15_deg"
-TRIAL_DURATION_SECONDS = 15
 # =============================================================================
 # GEOMETRY
 # =============================================================================
@@ -253,29 +248,6 @@ class StereoInputRunner:
         self.print_every_seconds = print_every_seconds
         self.audio_queue = queue.Queue(maxsize=8)
         self.last_print_time = 0.0
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"beamforming_{TRIAL_NAME}_{TRUE_ANGLE_DEG:+.0f}deg_{timestamp}.csv"
-
-        self.log_file = open("beamforming_log.csv", "w", newline="")
-        self.csv_writer = csv.writer(self.log_file)
-
-        self.csv_writer.writerow([
-            "time",
-            "trial_name",
-            "true_angle_deg",
-            "delay_samples",
-            "corrected_delay_samples",
-            "estimated_angle_deg",
-            "smoothed_angle_deg",
-            "angle_error_deg",
-            "confidence",
-            "mic1_rms",
-            "mic2_rms",
-            "beamformed_rms",
-            "valid",
-        ])
-
-        print("Logging to: beamforming_log.csv")
 
     def audio_callback(self, indata, frames, time_info, status):
         if status:
@@ -307,8 +279,6 @@ class StereoInputRunner:
     def run(self):
         self.print_header()
 
-        start_time = time.time()
-
         with sd.InputStream(
             device=self.device,
             channels=2,
@@ -317,15 +287,10 @@ class StereoInputRunner:
             dtype="float32",
             callback=self.audio_callback,
         ):
-            while time.time() - start_time < TRIAL_DURATION_SECONDS:
+            while True:
                 stereo_block = self.audio_queue.get()
                 results = self.beamformer.process_stereo_block(stereo_block)
                 self.print_results(results)
-        
-        if hasattr(self, "log_file"):
-                self.log_file.close()
-
-        print(f"\nTrial finished after {TRIAL_DURATION_SECONDS} seconds.")
 
     def print_results(self, results: dict):
         now = time.time()
@@ -336,40 +301,12 @@ class StereoInputRunner:
 
         if results["valid"] and results["angle_deg"] is not None:
             self.angle_history.append(results["angle_deg"])
-        else:
-            self.angle_history.clear()
 
         if len(self.angle_history) > 0:
             smooth_angle = np.median(self.angle_history)
             angle_text = f"{smooth_angle:>7.2f}°"
         else:
-            smooth_angle = None
             angle_text = "waiting"
-
-        # CSV logging goes here
-        estimated_angle = results["angle_deg"]
-
-        if estimated_angle is not None:
-            angle_error = estimated_angle - TRUE_ANGLE_DEG
-        else:
-            angle_error = None
-
-        self.csv_writer.writerow([
-            time.time(),
-            TRIAL_NAME,
-            TRUE_ANGLE_DEG,
-            results["delay_samples"],
-            results["corrected_delay_samples"],
-            estimated_angle,
-            smooth_angle,
-            angle_error,
-            results["confidence"],
-            results["mic1_rms"],
-            results["mic2_rms"],
-            results["beamformed_rms"],
-            results["valid"],
-        ])
-        self.log_file.flush()
 
         print(
             f"Delay: {results['delay_samples']:>4} samples "
