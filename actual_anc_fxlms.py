@@ -15,8 +15,8 @@ from scipy.signal import correlate, correlation_lags
 #     MODE = "run"
 # =========================================================
 
-MODE = "run"   # change to "run" after calibration
-
+MODE = "calibrate"   # change to "run" after calibration
+#MODE = "run"
 
 # =========================================================
 # AUDIO SETTINGS
@@ -35,7 +35,7 @@ BLOCK_SIZE = 8192*2
 
 # You found int16 output is the safe/working output type.
 # Keep this low at first.
-CALIBRATION_OUTPUT_LIMIT_INT16 = 50000
+CALIBRATION_OUTPUT_LIMIT_INT16 = 8000
 ANC_OUTPUT_LIMIT_INT16 = 10000
 
 # Control command is internally clipped to this before conversion to int16.
@@ -59,7 +59,7 @@ CONTROL_FILTER_LENGTH = 16
 
 
 # Start conservative for speaker-in-loop adaptation.
-LEARNING_RATE = 0.0000001
+LEARNING_RATE = 0.0001
 
 EPSILON = 1e-6
 LEAKAGE = 1e-6

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Convenience launcher for the DANC project -- no more long python lines.
+#
+#   ./anc              run the direct ANC (the working version)
+#   ./anc calibrate    measure the secondary path (set up the rig first)
+#   ./anc graph        live dashboard on the Pi's monitor (DISPLAY=:0)
+#   ./anc graph-web    live dashboard in a browser (WebAgg, for remote/Mac)
+#
+# Anything after the command is forwarded, e.g. `./anc graph-web anc_log_123.csv`.
+
+cd "$(dirname "$(readlink -f "$0")")" || exit 1
+PY=.venv/bin/python
+
+cmd="${1:-run}"
+shift 2>/dev/null || true
+
+case "$cmd" in
+  run)       exec "$PY" actual_anc_direct.py run "$@" ;;
+  calibrate) exec "$PY" actual_anc_direct.py calibrate "$@" ;;
+  graph)     exec env DISPLAY=:0 "$PY" live_anc_graph.py "$@" ;;
+  graph-web) exec env ANC_GRAPH_BACKEND=WebAgg "$PY" live_anc_graph.py "$@" ;;
+  *) echo "usage: ./anc [run|calibrate|graph|graph-web] [extra args]" ; exit 1 ;;
+esac

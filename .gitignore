@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+# ANC test run logs
+anc_log_*.csv
+
+# ANC live-demo on/off control file (runtime IPC between the ANC and the graph)
+anc_control.txt
+anc_control.txt.tmp
+
 # Distribution / packaging
 .Python
 build/

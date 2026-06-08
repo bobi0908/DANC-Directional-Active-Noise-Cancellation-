@@ -2,18 +2,18 @@ import numpy as np
 import sounddevice as sd
 
 SAMPLE_RATE = 48000
-DURATION = 1
+DURATION = 0.5
 DEVICE_ID = 0
 
 INPUT_CHANNELS = 2
 OUTPUT_CHANNELS = 2
 
-AMP = 10000 # same quiet-audible value from the aplay/int16 test
+AMP = 50000 # same quiet-audible value from the aplay/int16 test
 
 n = int(DURATION * SAMPLE_RATE)
 t = np.arange(n) / SAMPLE_RATE
 
-mono = (AMP * np.sin(2 * np.pi * 100 * t)).astype(np.int16)
+mono = (AMP * np.sin(2 * np.pi * 1000 * t)).astype(np.int16)
 output = np.column_stack([mono, mono]).astype(np.int16)
 
 print(sd.query_devices(DEVICE_ID))
